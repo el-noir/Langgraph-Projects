@@ -1,56 +1,15 @@
 # Web Research Assistant
 
 🔬 **AI-powered research assistant with real-time streaming, beautiful UI, and comprehensive workflow visualization**
-
 [![Next.js](https://img.shields.io/badge/Next.js-15.5-black)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Latest-009688)](https://fastapi.tiangolo.com/)
 [![LangGraph](https://img.shields.io/badge/LangGraph-Latest-blue)](https://langchain-ai.github.io/langgraph/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 
-## ✨ Features
+## 🏗️ Architecture
 
-- 🎯 **Real-Time Streaming** - ChatGPT-style live report generation with typing effect
-- 🔍 **Progressive Source Display** - Sources appear as they're discovered
-- 📊 **5-Stage Workflow** - Search → Load → Summarize → Write → Finalize
-- 🎨 **Beautiful Black & White UI** - Modern, minimalist design
-- 📝 **Markdown Rendering** - Properly formatted reports with headings, lists, and citations
-- 🔄 **Live Progress Tracking** - Real-time updates at each workflow stage
-Web_Research_Assistant/
-├── main.py                      # FastAPI backend with streaming endpoints
-├── src/
-│   └── worflow/
-│       └── research_workflow.py # LangGraph workflow with streaming
-├── client/                      # Next.js frontend application
-│   ├── src/
-│   │   └── app/
-│   │       ├── page.tsx         # Main UI with streaming
-│   │       ├── layout.tsx       # Root layout
-│   │       └── globals.css      # Styles & animations
-│   ├── package.json             # Node dependencies
-│   └── SETUP.md                 # Frontend setup guide
-├── requirements_api.txt         # Python dependencies
-├── .env                         # Environment variables
-├── QUICKSTART.md                # Quick start guide
-├── STREAMING.md                 # Streaming documentation
-├── WORKFLOW_DIAGRAM.md          # Visual workflow diagrams
-└── README.md                    # This file
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.9+
-- Node.js 18+
-- API Keys: Google Gemini & Tavily
-
-### 1. Setup Environment
-
-Create `.env` file in root:
-```env
-GOOGLE_API_KEY=your_google_gemini_api_key
-TAVILY_API_KEY=your_tavily_search_api_key
 ```
-
-### 2. Install Backend Dependencies
+{{ ... }}
 
 ```bash
 pip install -r requirements_api.txt

@@ -1,5 +1,78 @@
 # Web Research Assistant - Workflow Diagram
 
+## LangGraph Workflow Structure
+
+```
+                    ┌─────────────────────────────────────┐
+                    │         START                       │
+                    └──────────────┬──────────────────────┘
+                                   │
+                                   ▼
+                    ┌─────────────────────────────────────┐
+                    │    Node 1: web_search_agent         │
+                    │    • Tavily API search               │
+                    │    • Find 10 sources                 │
+                    │    • Stream sources as found         │
+                    │    Output: search_results[]          │
+                    └──────────────┬──────────────────────┘
+                                   │
+                                   ▼
+                    ┌─────────────────────────────────────┐
+                    │    Node 2: content_loader            │
+                    │    • WebBaseLoader                   │
+                    │    • Extract page content            │
+                    │    • Clean & truncate text           │
+                    │    Output: page_contents[]           │
+                    └──────────────┬──────────────────────┘
+                                   │
+                                   ▼
+                    ┌─────────────────────────────────────┐
+                    │    Node 3: document_summarizer       │
+                    │    • Google Gemini API               │
+                    │    • Summarize each page             │
+                    │    • Extract key information         │
+                    │    Output: summaries[]               │
+                    └──────────────┬──────────────────────┘
+                                   │
+                                   ▼
+                    ┌─────────────────────────────────────┐
+                    │    Node 4: report_writer             │
+                    │    • Google Gemini API               │
+                    │    • Synthesize all summaries        │
+                    │    • Generate structured report      │
+                    │    • Stream report in chunks         │
+                    │    Output: final_report              │
+                    └──────────────┬──────────────────────┘
+                                   │
+                                   ▼
+                    ┌─────────────────────────────────────┐
+                    │    Node 5: citation_cache            │
+                    │    • Format citations                │
+                    │    • Add metadata                    │
+                    │    • Cache results                   │
+                    │    Output: citations[]               │
+                    └──────────────┬──────────────────────┘
+                                   │
+                                   ▼
+                    ┌─────────────────────────────────────┐
+                    │         END                          │
+                    │    Return: Complete Research State   │
+                    └─────────────────────────────────────┘
+```
+
+## State Schema (ResearchState)
+
+```python
+class ResearchState(TypedDict):
+    query: str                          # User's research query
+    search_results: List[Dict]          # Raw search results from Tavily
+    page_contents: List[Dict]           # Extracted content from web pages
+    summaries: List[Dict]               # Individual page summaries
+    final_report: str                   # Combined research report
+    citations: List[Dict]               # Citations and references
+    error_message: Optional[str]        # Error handling
+```
+
 ## Complete Streaming Workflow
 
 ```mermaid
