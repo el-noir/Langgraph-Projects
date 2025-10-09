@@ -1,79 +1,89 @@
-# Web Research Assistant API
+# Web Research Assistant
 
-🔬 **AI-powered research assistant using LangGraph workflow served via FastAPI**
+🔬 **AI-powered research assistant with real-time streaming, beautiful UI, and comprehensive workflow visualization**
 
-## 🏗️ Architecture
+[![Next.js](https://img.shields.io/badge/Next.js-15.5-black)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Latest-009688)](https://fastapi.tiangolo.com/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Latest-blue)](https://langchain-ai.github.io/langgraph/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   FastAPI       │    │   LangGraph      │    │   External      │
-│   main.py       │───▶│   Workflow       │───▶│   Services      │
-│                 │    │   research_      │    │                 │
-│   • /research   │    │   workflow.py    │    │   • Tavily      │
-│   • /health     │    │                  │    │   • Google AI   │
-│   • /sessions   │    │   Nodes:         │    │   • Web Pages   │
-└─────────────────┘    │   • web_search   │    └─────────────────┘
-                       │   • content_     │
-                       │     loader       │
-                       │   • summarizer   │
-                       │   • report_      │
-                       │     writer       │
-                       │   • citation_    │
-                       │     cache        │
-                       └──────────────────┘
-```
+## ✨ Features
 
-## 📁 Project Structure
-
-```
+- 🎯 **Real-Time Streaming** - ChatGPT-style live report generation with typing effect
+- 🔍 **Progressive Source Display** - Sources appear as they're discovered
+- 📊 **5-Stage Workflow** - Search → Load → Summarize → Write → Finalize
+- 🎨 **Beautiful Black & White UI** - Modern, minimalist design
+- 📝 **Markdown Rendering** - Properly formatted reports with headings, lists, and citations
+- 🔄 **Live Progress Tracking** - Real-time updates at each workflow stage
 Web_Research_Assistant/
-├── main.py                 # FastAPI application with research routes
-├── research_workflow.py    # LangGraph workflow implementation
-├── start_api.py           # API startup script
-├── test_api.py            # API testing suite
-├── requirements_api.txt   # Python dependencies
-├── .env                   # Environment variables
-└── README.md             # This file
-```
+├── main.py                      # FastAPI backend with streaming endpoints
+├── src/
+│   └── worflow/
+│       └── research_workflow.py # LangGraph workflow with streaming
+├── client/                      # Next.js frontend application
+│   ├── src/
+│   │   └── app/
+│   │       ├── page.tsx         # Main UI with streaming
+│   │       ├── layout.tsx       # Root layout
+│   │       └── globals.css      # Styles & animations
+│   ├── package.json             # Node dependencies
+│   └── SETUP.md                 # Frontend setup guide
+├── requirements_api.txt         # Python dependencies
+├── .env                         # Environment variables
+├── QUICKSTART.md                # Quick start guide
+├── STREAMING.md                 # Streaming documentation
+├── WORKFLOW_DIAGRAM.md          # Visual workflow diagrams
+└── README.md                    # This file
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### Prerequisites
+- Python 3.9+
+- Node.js 18+
+- API Keys: Google Gemini & Tavily
+
+### 1. Setup Environment
+
+Create `.env` file in root:
+```env
+GOOGLE_API_KEY=your_google_gemini_api_key
+TAVILY_API_KEY=your_tavily_search_api_key
+```
+
+### 2. Install Backend Dependencies
 
 ```bash
 pip install -r requirements_api.txt
 ```
 
-Or install core packages:
+### 3. Install Frontend Dependencies
+
 ```bash
-pip install fastapi uvicorn langchain langgraph langchain-google-genai langchain-tavily langchain-community
+cd client
+npm install
+cd ..
 ```
 
-### 2. Set Environment Variables
+### 4. Start Backend (Terminal 1)
 
-Create a `.env` file:
-```env
-GOOGLE_API_KEY=your_google_api_key_here
-TAVILY_API_KEY=your_tavily_api_key_here
-```
-
-### 3. Start the API
-
-Option A - Using startup script:
-```bash
-python start_api.py
-```
-
-Option B - Direct uvicorn:
 ```bash
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 4. Test the API
+### 5. Start Frontend (Terminal 2)
 
 ```bash
-python test_api.py
+cd client
+npm run dev
 ```
+
+### 6. Access the Application
+
+- **Frontend UI**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+
+📖 **For detailed setup instructions, see [QUICKSTART.md](QUICKSTART.md)**
 
 ## 🔌 API Endpoints
 
@@ -81,109 +91,153 @@ python test_api.py
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/` | API information and available endpoints |
-| `GET` | `/health` | Health check |
-| `POST` | `/research` | Conduct comprehensive research |
-| `GET` | `/research/samples` | Get sample queries and usage examples |
-
-### Session Management
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/research/sessions` | List all research sessions |
-| `GET` | `/research/session/{thread_id}` | Get specific research session |
-| `DELETE` | `/research/sessions` | Clear all sessions |
-
-### Documentation
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
+| `POST` | `/research` | Non-streaming research (legacy) |
+| `POST` | `/research/stream` | **Streaming research with real-time updates** |
 | `GET` | `/docs` | Interactive API documentation (Swagger) |
 | `GET` | `/redoc` | Alternative API documentation |
 
+### Streaming Endpoint
+
+The `/research/stream` endpoint uses Server-Sent Events (SSE) to stream:
+- 🔍 Sources as they're discovered
+- 📝 Report chunks as they're generated (typing effect)
+- 📊 Progress updates at each workflow stage
+- ✅ Final results with citations
+
+**Event Types:**
+- `status` - Workflow step updates
+- `source_found` - Individual source discovered
+- `report_chunk` - Report text chunk (50 chars)
+- `result` - Final research results
+- `error` - Error information
+
 ## 📝 Usage Examples
 
-### Python Request
+### Frontend (Recommended)
+
+Simply visit http://localhost:3000 and enter your research query. The UI will:
+1. Show sources as they're discovered
+2. Display the report as it's being generated (typing effect)
+3. Update progress in real-time
+4. Show final results with citations
+
+### Streaming API (Python)
 
 ```python
 import requests
 
-# Conduct research
+url = 'http://localhost:8000/research/stream'
+params = {'query': 'Latest AI developments 2024'}
+
+with requests.post(url, params=params, stream=True) as response:
+    for line in response.iter_lines():
+        if line.startswith(b'data: '):
+            data = json.loads(line[6:])
+            
+            if data['type'] == 'source_found':
+                print(f"Found: {data['source']['title']}")
+            elif data['type'] == 'report_chunk':
+                print(data['chunk'], end='', flush=True)
+            elif data['type'] == 'result':
+                print("\nResearch complete!")
+```
+
+### Non-Streaming API (Python)
+
+```python
+import requests
+
 response = requests.post(
     'http://localhost:8000/research',
-    json={
-        'query': 'Latest developments in artificial intelligence 2024',
-        'thread_id': 'my_research_session'  # Optional
-    }
+    params={'query': 'Latest AI developments 2024'}
 )
 
 result = response.json()
 if result['success']:
     print(f"Report: {result['data']['report']}")
     print(f"Citations: {len(result['data']['citations'])}")
-else:
-    print(f"Error: {result['error']}")
 ```
 
-### cURL Request
+### cURL (Streaming)
 
 ```bash
-curl -X POST "http://localhost:8000/research" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "query": "Latest developments in artificial intelligence 2024"
-     }'
+curl -N -X POST "http://localhost:8000/research/stream?query=AI%20trends%202025"
 ```
 
-### JavaScript/Fetch
+## 📊 Streaming Events
 
-```javascript
-fetch('http://localhost:8000/research', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-        query: 'Latest developments in artificial intelligence 2024'
-    })
-})
-.then(response => response.json())
-.then(data => {
-    if (data.success) {
-        console.log('Report:', data.data.report);
-    } else {
-        console.error('Error:', data.error);
-    }
-});
-```
-
-## 📊 Response Format
-
-### Research Endpoint Response
-
+### Status Event
 ```json
 {
-  "success": true,
-  "error": null,
-  "data": {
-    "query": "Latest developments in artificial intelligence 2024",
-    "sources_found": 5,
-    "pages_processed": 5,
-    "summaries_generated": 5,
-    "report": "## AI Developments 2024\n\n**Executive Summary**\n...",
-    "citations": [
-      {
-        "id": 1,
-        "title": "AI Advances in 2024",
-        "url": "https://example.com/ai-2024",
-        "access_date": "2024-10-09",
-        "citation_format": "[1] AI Advances in 2024. Retrieved 2024-10-09. https://example.com/ai-2024"
-      }
-    ],
-    "report_length": 7531,
-    "timestamp": "2024-10-09 15:30:45"
-  },
-  "processing_time": 45.67
+  "type": "status",
+  "step": "searching",
+  "message": "🔍 Found 10 sources",
+  "progress": 20,
+  "data": {"sources_found": 10}
 }
 ```
+
+### Source Found Event
+```json
+{
+  "type": "source_found",
+  "source": {
+    "id": 1,
+    "title": "AI Advances in 2024",
+    "url": "https://example.com/ai-2024",
+    "score": 0.95
+  },
+  "progress": 15
+}
+```
+
+### Report Chunk Event
+```json
+{
+  "type": "report_chunk",
+  "chunk": "## AI Developments 2024\n\n**Executive Summary**\n",
+  "progress": 85
+}
+```
+
+### Result Event
+```json
+{
+  "type": "result",
+  "data": {
+    "query": "Latest AI developments 2024",
+    "sources_found": 10,
+    "pages_processed": 10,
+    "summaries_generated": 10,
+    "report": "Full report text...",
+    "citations": [{...}],
+    "report_length": 7531,
+    "timestamp": "2025-10-09 06:00:00"
+  }
+}
+```
+
+## 🎨 UI Features
+
+### ChatGPT-Style Streaming
+- **Live typing effect** - Report appears character by character
+- **Blinking cursor** - Shows active generation
+- **Progressive sources** - Sources appear as discovered
+- **Clean design** - Minimal, focused interface
+- **Real-time progress** - Smooth progress bar
+
+### Markdown Rendering
+- **Headings** (# and ##) - Large, bold section titles
+- **Bold text** (\*\*text\*\*) - Emphasized content
+- **Bullet lists** (* item) - Proper list formatting
+- **Citations** ([1], [2]) - Blue superscript numbers
+- **Proper spacing** - Comfortable reading experience
+
+### Black & White Theme
+- Professional minimalist design
+- High contrast for readability
+- Custom scrollbar styling
+- Smooth animations
 
 ## 🔧 Configuration
 
@@ -191,99 +245,146 @@ fetch('http://localhost:8000/research', {
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `GOOGLE_API_KEY` | Google Gemini API key for LLM operations | ✅ Yes |
-| `TAVILY_API_KEY` | Tavily API key for web search | ✅ Yes |
+| `GOOGLE_API_KEY` | Google Gemini API key | ✅ Yes |
+| `TAVILY_API_KEY` | Tavily Search API key | ✅ Yes |
 
-### Workflow Parameters
+### Workflow Customization
 
-Edit `research_workflow.py` to customize:
+Edit `src/worflow/research_workflow.py`:
 
-- **Search results limit**: Modify `max_results` in `TavilySearch`
-- **Content length**: Adjust content truncation in `content_loader`
-- **Model settings**: Change temperature, model version in `ChatGoogleGenerativeAI`
-- **Prompt templates**: Customize system prompts for different node behaviors
+- **Search limit**: `max_results=10` in `TavilySearch`
+- **Chunk size**: `chunk_size=50` for streaming
+- **Model**: `model="gemini-2.0-flash"`
+- **Temperature**: `temperature=0.1`
+- **Content limit**: `4000` characters per page
+
+### Frontend Customization
+
+Edit `client/src/app/globals.css`:
+
+- **Colors**: Change `--background` and `--foreground`
+- **Fonts**: Modify `--font-geist-sans`
+- **Animations**: Adjust `fadeIn` duration
 
 ## 🧪 Testing
 
-### Run Test Suite
+### Frontend Testing
+
+1. Start both backend and frontend
+2. Visit http://localhost:3000
+3. Enter a test query: "Best restaurants in Riyadh"
+4. Watch the streaming in action:
+   - Sources appear progressively
+   - Report types out like ChatGPT
+   - Progress bar fills smoothly
+   - Final results display with citations
+
+### Backend Testing
+
+**Test streaming endpoint:**
+```bash
+curl -N -X POST "http://localhost:8000/research/stream?query=AI%20trends"
+```
+
+**Test non-streaming endpoint:**
+```bash
+curl -X POST "http://localhost:8000/research?query=AI%20trends"
+```
+
+**View API docs:**
+```
+http://localhost:8000/docs
+```
+
+## 🚀 Deployment
+
+### Frontend (Vercel)
 
 ```bash
-python test_api.py
+cd client
+vercel deploy
 ```
 
-Tests include:
-- ✅ Health check
-- ✅ Sample queries endpoint
-- ✅ Full research workflow
-- ✅ Session management
+### Backend (Railway/Render)
 
-### Manual Testing
+1. Connect your GitHub repository
+2. Set environment variables:
+   - `GOOGLE_API_KEY`
+   - `TAVILY_API_KEY`
+3. Deploy from `main` branch
 
-1. **Health Check**: `GET http://localhost:8000/health`
-2. **Sample Queries**: `GET http://localhost:8000/research/samples`
-3. **Research**: `POST http://localhost:8000/research` with JSON body
-4. **Documentation**: Visit `http://localhost:8000/docs`
+### Environment Variables in Production
 
-## 🚀 Production Deployment
+**Backend:**
+- `GOOGLE_API_KEY`
+- `TAVILY_API_KEY`
+- Update CORS origins in `main.py`
 
-### 1. Security Considerations
+**Frontend:**
+- Update API URL in `page.tsx` (line 45)
+- Change from `http://localhost:8000` to your backend URL
 
-- Set specific CORS origins instead of `["*"]`
-- Add authentication/API key validation
-- Use environment-specific configurations
-- Implement rate limiting
+## 📚 Documentation
 
-### 2. Database Integration
+- **[QUICKSTART.md](QUICKSTART.md)** - Complete setup guide
+- **[STREAMING.md](STREAMING.md)** - Streaming implementation details
+- **[WORKFLOW_DIAGRAM.md](WORKFLOW_DIAGRAM.md)** - Visual workflow diagrams
+- **[client/SETUP.md](client/SETUP.md)** - Frontend setup guide
 
-Replace in-memory session storage:
+## 🎯 Workflow Stages
 
-```python
-# Instead of: research_sessions: Dict[str, Dict[str, Any]] = {}
-# Use: Database connection (PostgreSQL, MongoDB, etc.)
-```
+| Stage | Progress | Duration | Description |
+|-------|----------|----------|-------------|
+| **Initializing** | 0% | <1s | Starting workflow |
+| **Searching** | 0-20% | 2-5s | Finding sources with Tavily |
+| **Loading** | 20-40% | 5-15s | Extracting content from pages |
+| **Summarizing** | 40-60% | 20-40s | AI summarization with Gemini |
+| **Writing** | 60-95% | 10-20s | Report generation with Gemini |
+| **Finalizing** | 95-100% | <1s | Processing citations |
 
-### 3. Scaling Options
+**Total Time:** 40-80 seconds (varies by query complexity)
 
-- **Horizontal**: Deploy multiple API instances behind load balancer
-- **Async**: Implement background task processing for long research queries
-- **Caching**: Add Redis for caching research results
-- **Queue**: Use Celery/RQ for workflow task queuing
+## 🎯 Performance Tips
 
-### 4. Monitoring
+- **Reduce sources**: Change `max_results=10` to `max_results=5`
+- **Faster model**: Use `gemini-1.5-flash` instead of `gemini-2.0-flash`
+- **Smaller chunks**: Reduce `chunk_size=50` to `chunk_size=25`
+- **Skip content loading**: Comment out WebBaseLoader for faster results
 
-- Add logging with structured format
-- Implement health checks for external services
-- Monitor API response times and error rates
-- Track research workflow success/failure rates
+## 🤝 Contributing
 
-## 🔗 Related Files
+Contributions are welcome! Areas for improvement:
 
-- **Notebook**: `workflow.ipynb` - Interactive development environment
-- **Original workflow**: Developed and tested in Jupyter notebook
-- **Migration**: Workflow extracted to `research_workflow.py` for API use
+- [ ] Add pause/resume functionality
+- [ ] Implement cancel button
+- [ ] Save research history
+- [ ] Export reports as PDF
+- [ ] Add more citation formats
+- [ ] Support multiple languages
+- [ ] Add voice input
+- [ ] Implement user authentication
 
-## 🆘 Troubleshooting
+## 📄 License
 
-### Common Issues
+MIT License - feel free to use this project for learning and development!
 
-1. **Import errors**: Install missing packages with `pip install -r requirements_api.txt`
-2. **API key errors**: Check `.env` file and environment variable names
-3. **Port conflicts**: Change port in `start_api.py` or `uvicorn` command
-4. **SSL errors**: WebBaseLoader handles SSL gracefully with fallbacks
+## 🙏 Acknowledgments
 
-### Debug Mode
-
-Start with verbose logging:
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
-```
-
-### Performance Issues
-
-- Reduce `max_results` in search configuration
-- Implement caching for repeated queries
-- Use async processing for long-running research
+- **LangChain & LangGraph** - Workflow orchestration
+- **Google Gemini** - AI summarization and report generation
+- **Tavily** - Web search API
+- **Next.js** - Frontend framework
+- **FastAPI** - Backend framework
+- **Tailwind CSS** - Styling
 
 ---
 
-🎉 **Ready to conduct AI-powered research!** Visit `http://localhost:8000/docs` for interactive API documentation.
+## 🎉 Ready to Research!
+
+1. **Start Backend**: `uvicorn main:app --reload`
+2. **Start Frontend**: `cd client && npm run dev`
+3. **Visit**: http://localhost:3000
+4. **Enter Query**: "Best restaurants in Tokyo"
+5. **Watch Magic**: See sources stream in and report generate live!
+
+**Questions?** Check [QUICKSTART.md](QUICKSTART.md) or [STREAMING.md](STREAMING.md)
