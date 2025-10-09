@@ -441,13 +441,28 @@ def run_research_stream(query: str, thread_id: str = None):
             # Determine which node is executing
             if "web_search" in event:
                 state = event["web_search"]
+                search_results = state.get("search_results", [])
+                
+                # Stream each source as it's found
+                for idx, source in enumerate(search_results):
+                    yield {
+                        "type": "source_found",
+                        "source": {
+                            "id": idx + 1,
+                            "title": source.get("title", ""),
+                            "url": source.get("url", ""),
+                            "score": source.get("score", 0)
+                        },
+                        "progress": 10 + int((idx / len(search_results)) * 10)
+                    }
+                
                 yield {
                     "type": "status",
                     "step": "searching",
-                    "message": f"🔍 Searching web sources...",
+                    "message": f"🔍 Found {len(search_results)} sources",
                     "progress": 20,
                     "data": {
-                        "sources_found": len(state.get("search_results", []))
+                        "sources_found": len(search_results)
                     }
                 }
             
@@ -477,13 +492,26 @@ def run_research_stream(query: str, thread_id: str = None):
             
             elif "report_writer" in event:
                 state = event["report_writer"]
+                report = state.get("final_report", "")
+                
+                # Stream the report in chunks for typing effect
+                if report:
+                    chunk_size = 50  # Characters per chunk
+                    for i in range(0, len(report), chunk_size):
+                        chunk = report[i:i+chunk_size]
+                        yield {
+                            "type": "report_chunk",
+                            "chunk": chunk,
+                            "progress": 80 + int((i / len(report)) * 15)  # 80-95%
+                        }
+                
                 yield {
                     "type": "status",
                     "step": "writing",
-                    "message": "📊 Writing comprehensive report...",
-                    "progress": 80,
+                    "message": "📊 Report generation complete",
+                    "progress": 95,
                     "data": {
-                        "report_length": len(state.get("final_report", ""))
+                        "report_length": len(report)
                     }
                 }
             
