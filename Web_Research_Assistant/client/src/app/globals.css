@@ -38,3 +38,67 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #333333;
 }
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Report Styling */
+.leading-relaxed {
+  line-height: 1.75;
+}
+
+.leading-relaxed h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #000;
+}
+
+.leading-relaxed h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #000;
+}
+
+.leading-relaxed strong {
+  font-weight: 600;
+  color: #000;
+}
+
+.leading-relaxed li {
+  margin-bottom: 0.5rem;
+  color: #374151;
+}
+
+.leading-relaxed p {
+  color: #374151;
+  margin-bottom: 0.75rem;
+}
+
+.leading-relaxed sup {
+  font-size: 0.75rem;
+  vertical-align: super;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.leading-relaxed sup:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}

@@ -2,11 +2,21 @@
 
 import { useState } from 'react';
 
+interface WorkflowStep {
+  step: string;
+  message: string;
+  progress: number;
+  data?: any;
+  timestamp: number;
+}
+
 export default function Home() {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState('');
+  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
+  const [currentProgress, setCurrentProgress] = useState(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,9 +25,11 @@ export default function Home() {
     setLoading(true);
     setError('');
     setResult(null);
+    setWorkflowSteps([]);
+    setCurrentProgress(0);
 
     try {
-      const response = await fetch(`http://localhost:8000/research?query=${encodeURIComponent(query)}`, {
+      const response = await fetch(`http://localhost:8000/research/stream?query=${encodeURIComponent(query)}`, {
         method: 'POST',
       });
 
@@ -25,17 +37,48 @@ export default function Home() {
         throw new Error('Research request failed');
       }
 
-      const data = await response.json();
-      
-      // Check if the response indicates success
-      if (!data.success) {
-        throw new Error(data.error || 'Research failed');
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('No response body');
       }
-      
-      setResult(data.data);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.type === 'status') {
+                setWorkflowSteps(prev => [...prev, {
+                  step: data.step,
+                  message: data.message,
+                  progress: data.progress,
+                  data: data.data,
+                  timestamp: Date.now()
+                }]);
+                setCurrentProgress(data.progress);
+              } else if (data.type === 'result') {
+                setResult(data.data);
+                setLoading(false);
+              } else if (data.type === 'error') {
+                throw new Error(data.error || 'Research failed');
+              }
+            } catch (parseError) {
+              console.error('Failed to parse SSE data:', parseError);
+            }
+          }
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
       setLoading(false);
     }
   };
@@ -115,18 +158,86 @@ export default function Home() {
           </div>
         )}
 
-        {/* Loading State */}
+        {/* Workflow Progress */}
         {loading && (
           <div className="space-y-6">
+            {/* Progress Bar */}
             <div className="border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-2 h-2 bg-black rounded-full animate-pulse"></div>
-                <h2 className="text-lg font-semibold">Processing your research...</h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-lg font-semibold">Research Progress</h2>
+                <span className="text-sm font-mono text-gray-600">{currentProgress}%</span>
               </div>
-              <div className="space-y-3">
-                <div className="h-4 bg-gray-100 rounded animate-pulse"></div>
-                <div className="h-4 bg-gray-100 rounded animate-pulse w-5/6"></div>
-                <div className="h-4 bg-gray-100 rounded animate-pulse w-4/6"></div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-black h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${currentProgress}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Workflow Steps */}
+            <div className="border border-gray-200 rounded-lg">
+              <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
+                <h2 className="text-xl font-bold">Workflow Steps</h2>
+                <p className="text-sm text-gray-600 mt-1">Real-time progress of research workflow</p>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  {workflowSteps.map((step, index) => (
+                    <div key={index} className="flex items-start gap-4 animate-fadeIn">
+                      <div className="flex-shrink-0 mt-1">
+                        {step.step === 'completed' ? (
+                          <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        ) : step.step === 'failed' ? (
+                          <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </div>
+                        ) : (
+                          <div className="w-6 h-6 border-2 border-black rounded-full flex items-center justify-center">
+                            <div className="w-2 h-2 bg-black rounded-full animate-pulse"></div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">{step.message}</p>
+                        {step.data && (
+                          <div className="mt-1 text-sm text-gray-600 space-y-1">
+                            {step.data.sources_found !== undefined && (
+                              <p>• Found {step.data.sources_found} sources</p>
+                            )}
+                            {step.data.pages_processed !== undefined && (
+                              <p>• Processed {step.data.pages_processed} pages</p>
+                            )}
+                            {step.data.summaries_generated !== undefined && (
+                              <p>• Generated {step.data.summaries_generated} summaries</p>
+                            )}
+                            {step.data.report_length !== undefined && (
+                              <p>• Report length: {step.data.report_length} characters</p>
+                            )}
+                            {step.data.citations_count !== undefined && (
+                              <p>• Citations: {step.data.citations_count}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-400 font-mono">
+                        {new Date(step.timestamp).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {workflowSteps.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>Initializing workflow...</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -162,18 +273,63 @@ export default function Home() {
                 <p className="text-sm text-gray-600 mt-1">Query: {result.query}</p>
               </div>
               <div className="p-6">
-                <div className="prose prose-sm max-w-none">
-                  {result.report ? (
-                    <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
-                      {result.report}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <p className="mb-2">⚠️ Report generation incomplete</p>
-                      <p className="text-sm">The research workflow may have encountered an issue. Check the backend logs for details.</p>
-                    </div>
-                  )}
-                </div>
+                {result.report ? (
+                  <div className="text-gray-800 leading-relaxed space-y-4">
+                    {result.report.split('\n').map((line: string, index: number) => {
+                      // Heading 2
+                      if (line.startsWith('## ')) {
+                        return <h2 key={index} className="text-2xl font-bold mt-8 mb-4">{line.slice(3)}</h2>;
+                      }
+                      // Heading 1
+                      if (line.startsWith('# ')) {
+                        return <h1 key={index} className="text-3xl font-bold mt-8 mb-4">{line.slice(2)}</h1>;
+                      }
+                      // Bold text
+                      if (line.includes('**')) {
+                        const parts = line.split(/\*\*(.*?)\*\*/g);
+                        return (
+                          <p key={index} className="mb-2">
+                            {parts.map((part, i) => 
+                              i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+                            )}
+                          </p>
+                        );
+                      }
+                      // Bullet points
+                      if (line.trim().startsWith('*   ') || line.trim().startsWith('* ')) {
+                        return <li key={index} className="ml-8 mb-1 list-disc">{line.trim().slice(2)}</li>;
+                      }
+                      // Numbered lists
+                      if (/^\d+\./.test(line.trim())) {
+                        return <li key={index} className="ml-8 mb-1 list-decimal">{line.trim().replace(/^\d+\.\s*/, '')}</li>;
+                      }
+                      // Citations [1], [2], etc.
+                      if (line.includes('[') && /\[\d+\]/.test(line)) {
+                        const parts = line.split(/(\[\d+\])/g);
+                        return (
+                          <p key={index} className="mb-2">
+                            {parts.map((part, i) => 
+                              /\[\d+\]/.test(part) ? 
+                                <sup key={i} className="text-blue-600 font-semibold">{part}</sup> : 
+                                part
+                            )}
+                          </p>
+                        );
+                      }
+                      // Empty lines
+                      if (line.trim() === '') {
+                        return <div key={index} className="h-2"></div>;
+                      }
+                      // Regular paragraphs
+                      return <p key={index} className="mb-2">{line}</p>;
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p className="mb-2">⚠️ Report generation incomplete</p>
+                    <p className="text-sm">The research workflow may have encountered an issue. Check the backend logs for details.</p>
+                  </div>
+                )}
               </div>
             </div>
 

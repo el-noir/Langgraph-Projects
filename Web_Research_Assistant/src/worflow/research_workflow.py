@@ -388,6 +388,146 @@ def create_research_workflow():
     return compiled_workflow
 
 
+# Streaming research function with progress updates
+def run_research_stream(query: str, thread_id: str = None):
+    """
+    Run end-to-end research workflow with streaming progress updates
+    
+    Args:
+        query: Research question/topic
+        thread_id: Optional thread ID for session management
+        
+    Yields:
+        Dict containing progress updates and final results
+    """
+    # Generate thread ID if not provided
+    if thread_id is None:
+        thread_id = f"research_{int(time.time())}"
+    
+    # Initial state
+    initial_state = {
+        "query": query,
+        "search_results": [],
+        "page_contents": [],
+        "summaries": [],
+        "final_report": "",
+        "citations": [],
+        "error_message": None
+    }
+    
+    # Configure thread
+    config = {"configurable": {"thread_id": thread_id}}
+    
+    try:
+        # Yield initial status
+        yield {
+            "type": "status",
+            "step": "initializing",
+            "message": f"🔬 Starting research workflow for: '{query}'",
+            "progress": 0
+        }
+        
+        # Create workflow instance
+        research_workflow = create_research_workflow()
+        
+        # Stream through the workflow
+        step_count = 0
+        total_steps = 5  # web_search, content_loader, summarizer, report_writer, citation_cache
+        
+        for event in research_workflow.stream(initial_state, config):
+            step_count += 1
+            progress = int((step_count / total_steps) * 100)
+            
+            # Determine which node is executing
+            if "web_search" in event:
+                state = event["web_search"]
+                yield {
+                    "type": "status",
+                    "step": "searching",
+                    "message": f"🔍 Searching web sources...",
+                    "progress": 20,
+                    "data": {
+                        "sources_found": len(state.get("search_results", []))
+                    }
+                }
+            
+            elif "content_loader" in event:
+                state = event["content_loader"]
+                yield {
+                    "type": "status",
+                    "step": "loading",
+                    "message": f"📄 Loading content from {len(state.get('search_results', []))} pages...",
+                    "progress": 40,
+                    "data": {
+                        "pages_processed": len(state.get("page_contents", []))
+                    }
+                }
+            
+            elif "summarizer" in event:
+                state = event["summarizer"]
+                yield {
+                    "type": "status",
+                    "step": "summarizing",
+                    "message": f"📝 Summarizing {len(state.get('page_contents', []))} documents...",
+                    "progress": 60,
+                    "data": {
+                        "summaries_generated": len(state.get("summaries", []))
+                    }
+                }
+            
+            elif "report_writer" in event:
+                state = event["report_writer"]
+                yield {
+                    "type": "status",
+                    "step": "writing",
+                    "message": "📊 Writing comprehensive report...",
+                    "progress": 80,
+                    "data": {
+                        "report_length": len(state.get("final_report", ""))
+                    }
+                }
+            
+            elif "citation_cache" in event:
+                state = event["citation_cache"]
+                yield {
+                    "type": "status",
+                    "step": "finalizing",
+                    "message": "📚 Processing citations and finalizing...",
+                    "progress": 95,
+                    "data": {
+                        "citations_count": len(state.get("citations", []))
+                    }
+                }
+        
+        # Get final result
+        final_result = research_workflow.invoke(initial_state, config)
+        
+        # Yield completion
+        yield {
+            "type": "status",
+            "step": "completed",
+            "message": "🎉 Research completed successfully!",
+            "progress": 100
+        }
+        
+        # Yield final result
+        formatted_result = format_research_response(final_result)
+        yield {
+            "type": "result",
+            "data": formatted_result["data"] if formatted_result["success"] else None,
+            "error": formatted_result.get("error")
+        }
+        
+    except Exception as e:
+        error_msg = f"Workflow failed: {str(e)}"
+        yield {
+            "type": "error",
+            "step": "failed",
+            "message": f"❌ {error_msg}",
+            "error": error_msg
+        }
+
+
 # Main research function
 def run_research(query: str, thread_id: str = None) -> Dict[str, Any]:
     """
