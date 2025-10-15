@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+const threadId = "default";
+const message = "Hi how are you";
+
+const source = new EventSource(`http://localhost:5000/chat/stream?message=${encodeURIComponent(message)}&thread_id=${threadId}`);
+
+source.addEventListener("open", e => console.log("Connected:", e));
+source.addEventListener("chunk", e => console.log("Chunk:", e.data));
+source.addEventListener("end", e => { console.log("Stream ended"); source.close(); });
+source.addEventListener("error", e => console.error("Error:", e));
+</script>
+</body>
+</html>
